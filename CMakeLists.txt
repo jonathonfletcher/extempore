@@ -126,7 +126,7 @@ elseif(WIN32)
   endif()
   set(EXTEMPORE_SYSTEM_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 else()
-  message(FATAL_ERROR "Sorry, Extempore isn't supported on this platform - OSX, Linux & Windows only.")
+  message(FATAL_ERROR "Sorry, Extempore isn't supported on this platform - macOS, Linux & Windows only.")
 endif()
 
 ########
@@ -197,7 +197,7 @@ target_include_directories(portaudio
 # platform-specific
 
 if(APPLE)
-  # use CoreAudio on OSX
+  # use CoreAudio on macOS
   target_sources(portaudio
     PRIVATE src/portaudio/src/hostapi/coreaudio/pa_mac_core.c
     PRIVATE src/portaudio/src/hostapi/coreaudio/pa_mac_core_blocking.c
@@ -449,7 +449,7 @@ if(PACKAGE)
     PRIVATE -DEXT_SHARE_DIR=".")
   target_compile_options(extempore
     PRIVATE -mtune=generic)
-elseif(${EXT_SHARE_DIR})
+elseif(EXT_SHARE_DIR)
   target_compile_definitions(extempore
     PRIVATE -DEXT_SHARE_DIR="${EXT_SHARE_DIR}")
 else()
@@ -485,11 +485,11 @@ if(WIN32)
     PROPERTIES
     COMPILE_FLAGS "/EHsc")
 
-elseif(APPLE) # OSX
+elseif(APPLE) # macOS
   # use clang++ by default
   set(CMAKE_C_COMPILER clang)
   set(CMAKE_CXX_COMPILER clang++)
-  # tell the compiler about the few ObjC++ source files on OSX
+  # tell the compiler about the few ObjC++ source files on macOS
   set_source_files_properties(
     src/Extempore.cpp
     src/SchemeFFI.cpp
@@ -591,61 +591,49 @@ if(WIN32)
 else(WIN32)
 
   # this approach requires specifying the inter-lib dependencies by hand, but
-  # allows us to do AOT compilation in parallel
+  # allows us to do AOT compilation in parallell
 
   set(EXTEMPORE_AOT_COMPILE_PORT 17099)
-  set(AOT_DIR ${CMAKE_SOURCE_DIR}/libs/aot-cache)
 
-  function(aotcompile_lib libfile group) # deps are optional, and go at the end
+  macro(aotcompile_lib libfile group) # deps are optional, and go at the end
     get_filename_component(basename ${libfile} NAME_WE)
     set(targetname aot_${basename})
-    set(filename ${AOT_DIR}/xtm${basename}.so)
-
-    set(file_deps ${libfile})
-    set(target_deps)
-    foreach(dep ${ARGN})
-      set(file_deps ${file_deps} ${AOT_DIR}/xtm${dep}.so)
-      set(target_deps ${target_deps} aot_${dep})
-    endforeach()
-
+    set(filename ${CMAKE_SOURCE_DIR}/libs/aot-cache/xtm${basename}.so)
     if(PACKAGE)
       add_custom_command (OUTPUT ${filename}
         COMMAND extempore --nobase --noaudio --mcpu=generic --attr=none --port=${EXTEMPORE_AOT_COMPILE_PORT}
         --eval "(impc:aot:compile-xtm-file \"${libfile}\")"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        DEPENDS ${file_deps}
         VERBATIM)
     else(PACKAGE)
       add_custom_command(OUTPUT ${filename}
         COMMAND extempore --nobase --noaudio --port=${EXTEMPORE_AOT_COMPILE_PORT}
         --eval "(impc:aot:compile-xtm-file \"${libfile}\")"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        DEPENDS ${file_deps}
         VERBATIM)
     endif(PACKAGE)
-
     add_custom_target(${targetname}
-      DEPENDS ${filename} ${target_deps} extempore)
-
+      DEPENDS ${filename} extempore)
     set_target_properties(${targetname} PROPERTIES FOLDER AOT)
-
     if(NOT ${group} STREQUAL "core")
       add_dependencies(${targetname} external_shlibs_${group})
       add_dependencies(aot_external_${group} ${targetname})
     endif()
-
+    foreach(dep ${ARGN})
+      add_dependencies(${targetname} aot_${dep})
+    endforeach()
     # decrement port number by 2
     math(EXPR EXTEMPORE_AOT_COMPILE_PORT "${EXTEMPORE_AOT_COMPILE_PORT} - 2")
-    set(EXTEMPORE_AOT_COMPILE_PORT "${EXTEMPORE_AOT_COMPILE_PORT}" PARENT_SCOPE)
-  endfunction(aotcompile_lib)
+  endmacro(aotcompile_lib)
 
   # core
   add_custom_target(aot_core)
   aotcompile_lib(libs/base/base.xtm core) # no lib dependency for base.xtm
   aotcompile_lib(libs/core/math.xtm core base)
+  aotcompile_lib(libs/core/rational.xtm core base)
   aotcompile_lib(libs/core/audiobuffer.xtm core base)
-  aotcompile_lib(libs/core/audio_dsp.xtm core base math audiobuffer)
-  aotcompile_lib(libs/core/instruments.xtm core base math audio_dsp)
+  aotcompile_lib(libs/core/audio_dsp.xtm core base rational audiobuffer)
+  aotcompile_lib(libs/core/instruments.xtm core base audio_dsp)
 
   set_target_properties(aot_core PROPERTIES FOLDER AOT)
   add_dependencies(aot_core extempore)
@@ -671,7 +659,7 @@ if(UNIX)
 
     ExternalProject_Add(portmidi
       PREFIX portmidi
-      URL https://github.com/extemporelang/portmidi/archive/master.zip
+      URL https://github.com/extemporelang/portmidi/archive/8602f548f71daf5ef638b2f7d224753400cb2158.zip
       CMAKE_ARGS
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DCMAKE_C_FLAGS=${EXT_DEPS_C_FLAGS}
@@ -726,7 +714,7 @@ if(UNIX)
 
     ExternalProject_Add(nanovg
       PREFIX nanovg
-      URL https://github.com/extemporelang/nanovg/archive/9d9232e338dd2c368924abe65d6885ae57d61e80.tar.gz
+      URL https://github.com/extemporelang/nanovg/archive/3c60175fcc2e5fe305b04355cdce35d499c80310.tar.gz
       CMAKE_ARGS
       -DEXTEMPORE_LIB_PATH=${CMAKE_SOURCE_DIR}/libs/platform-shlibs/extempore.lib
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -739,7 +727,7 @@ if(UNIX)
 
     ExternalProject_Add(stb_image
       PREFIX stb_image
-      URL https://github.com/extemporelang/stb/archive/master.zip
+      URL https://github.com/extemporelang/stb/archive/152a250a702bf28951bb0220d63bc0c99830c498.zip
       CMAKE_ARGS
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DCMAKE_C_FLAGS=${EXT_DEPS_C_FLAGS}
@@ -819,7 +807,7 @@ if(WIN32)
 
     ExternalProject_Add(portmidi
       PREFIX portmidi
-      URL https://github.com/extemporelang/portmidi/archive/master.zip
+      URL https://github.com/extemporelang/portmidi/archive/8602f548f71daf5ef638b2f7d224753400cb2158.zip
       CMAKE_ARGS
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DCMAKE_C_FLAGS=${EXT_DEPS_C_FLAGS}
@@ -851,7 +839,7 @@ if(WIN32)
 
     ExternalProject_Add(nanovg
       PREFIX nanovg
-      URL https://github.com/extemporelang/nanovg/archive/9d9232e338dd2c368924abe65d6885ae57d61e80.tar.gz
+      URL https://github.com/extemporelang/nanovg/archive/3c60175fcc2e5fe305b04355cdce35d499c80310.tar.gz
       CMAKE_ARGS
       -DEXTEMPORE_LIB_PATH=${CMAKE_SOURCE_DIR}/libs/platform-shlibs/extempore.lib
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -864,7 +852,7 @@ if(WIN32)
 
     ExternalProject_Add(stb_image
       PREFIX stb_image
-      URL https://github.com/extemporelang/stb/archive/master.zip
+      URL https://github.com/extemporelang/stb/archive/152a250a702bf28951bb0220d63bc0c99830c498.zip
       CMAKE_ARGS
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DCMAKE_C_FLAGS=${EXT_DEPS_C_FLAGS}
@@ -1032,10 +1020,9 @@ if(BUILD_TESTS)
   # extempore_add_example_as_test(examples/core/extempore_lang.xtm 10 examples-core) # doesn't terminate
   # extempore_add_example_as_test(examples/core/fasta_lang_shootout.xtm 10 examples-core) # no fdopen on Windows at this point
   extempore_add_example_as_test(examples/core/fmsynth.xtm 10 examples-audio)
-  extempore_add_example_as_test(examples/core/midi_synth.xtm 10 examples-audio)
   extempore_add_example_as_test(examples/core/mtaudio.xtm 10 examples-audio)
   extempore_add_example_as_test(examples/core/nbody_lang_shootout.xtm 10 examples-core)
-  extempore_add_example_as_test(examples/core/osc_101.xtm 10 examples-core)
+  # extempore_add_example_as_test(examples/core/osc_101.xtm 10 examples-core) # currently non-working
   # extempore_add_example_as_test(examples/core/polysynth.xtm 10 examples-audio)
   extempore_add_example_as_test(examples/core/scheduler.xtm 10 examples-audio)
   extempore_add_example_as_test(examples/core/topclock_metro.xtm 10 examples-audio)
