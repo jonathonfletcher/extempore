@@ -5,11 +5,11 @@
 
 ;;; Commentary:
 
-;; Simplest possible OSC example
+;; simple OSC examples in both Scheme and xtlang
 
 ;;; Code:
 
-;; start three osc servers
+;; start two osc servers
 (io:osc:start-server 7009 "osc-receive-7009")
 (io:osc:start-server 7019 "osc-receive-7019")
 
@@ -38,20 +38,20 @@
 ;;
 ;; by default all extempore osc ints and floats
 ;; are 32bit (i.e. not 64bit)
-;; finally, osc messages are bit endian
+;; finally, osc messages are big endian
 ;; so you'll likely need to swap your arguments
 (bind-func osc_receive_7020
   (lambda (address:i8* types:i8* args:i8*)
     (let ((data (bitcast args i32*)))
       (printf "address:%s  type:%s arg1:%f arg2:%d\n"
-	      address types
-	      (ftod (unswap32f (pref data 0)))
-	      (unswap32i (pref data 1))))))
+        address types
+        (ftod (unswap32f (pref data 0)))
+        (unswap32i (pref data 1))))))
 
 ;; define a sending address
 (define addy3 (cons "localhost" 7020))
 
-;; start server pointing to native wrapper around osc_receive_7020 closure
+;; start another server pointing to native wrapper around osc_receive_7020 closure
 (io:osc:start-server 7020
                      (impc:ti:get-mono-name osc_receive_7020)
                      (llvm:get-function-pointer
@@ -68,7 +68,7 @@
           (mod (modulo (+ (strlen address) 1) 4))
           (addressl (+ (+ (strlen address) 1)
                        (if (= 0 mod) 0 (- 4 mod))))
-          (typesl 4)		     
+          (typesl 4)
           (length (+ addressl typesl 4 4))
           (data (malloc length))
           (args (bitcast (pref-ptr data (+ addressl typesl)) i32*)))
@@ -82,5 +82,3 @@
 ;; Send another test message
 
 (my_osc_send "/native/mytest" 6.6 4321)
-
-

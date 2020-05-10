@@ -55,7 +55,7 @@
 (define *impc:compiler:verbose* #f)
 (define *impc:compiler:with-cache* #t)
 (define *impc:compiler:aot:dll* #t) ;; aot cache to dll (#t) or to llvm bitcode (#f)
-(define *impc:compiler:global-module-name* #f) 
+(define *impc:compiler:global-module-name* #f)
 
 (define *impc:compile:scheme-stubs* #t) ;; compile scheme stubs - on/off
 
@@ -185,7 +185,7 @@
     (print " failed constraint ")
     (print-with-colors *impc:compiler:pretty-print-code-color* 'default #f (print constraint))
     (print "\nwith type: ")
-    (print-with-colors *impc:compiler:pretty-print-type-color* 'default #f (print type))           
+    (print-with-colors *impc:compiler:pretty-print-type-color* 'default #f (print type))
     (if (not (null? args))
         (begin
           (print "\nast: ")
@@ -763,7 +763,7 @@
 ;;
 
 ;; need to fill this out! :(
-(define *impc:reserved-keywords* 
+(define *impc:reserved-keywords*
   '("cat" "if" "list" "define" "letz" "memzone" "beginz" "let" "zone_cleanup" ">=" "<=" "and" "quote" "list" "strln" "strj" "sprintln" "println" "printout" "afill!" "pfill!" "tfill!" "or" "free" "not" "cond" "cset!" "cref" "refcheck" "doloop" "dotimes" "while" "now" "aref" "&" "bor" "&" "<<" ">>" "~" "else" "null" "pset!" "pref" "pref-ptr" "vset!" "vref" "tref" "tref-ptr" "alloc" "salloc" "halloc" "zalloc" "randomf" "void" "#t" "#f")) ;; etc..
 
 (define *impc:ti:builtin-cache* '(;; math operators
@@ -2210,7 +2210,7 @@
                       (impc:ir:pretty-print-type x))
                      ((and (list? x) ;; if we have mulitple VALID type
                            ;; options then just choose the first valid
-                           ;; type 
+                           ;; type
                            (member #t (map (lambda (xx) (impc:ir:type? xx)) x)))
                       (impc:ir:pretty-print-type (car (cl:remove-if-not (lambda (xx) (impc:ir:type? xx)) x))))
                      (else "_")))
@@ -2763,7 +2763,7 @@
   (lambda (name type)
     (if (output-port? *impc:aot:current-output-port*)
         (begin
-          (write (list 'bind-lib (string->symbol *impc:aot:current-lib-name*) name type) 
+          (write (list 'bind-lib (string->symbol *impc:aot:current-lib-name*) name type)
                  *impc:aot:current-output-port*)
           (newline *impc:aot:current-output-port*)))))
 
@@ -2837,7 +2837,7 @@
                   (error "")))
            *impc:aot:current-output-port*)
           (newline *impc:aot:current-output-port*)
-          (if (and (not (null? args)) (string? (car args))) 
+          (if (and (not (null? args)) (string? (car args)))
               (begin
                 (write (list 'bind-external-dylib-declarations (symbol->string library) (car args))
                        *impc:aot:current-output-port*)
@@ -3143,26 +3143,14 @@
 
 (define impc:aot:print-compilation-details
   (lambda (start-time)
-    (print-with-colors 'yellow 'default #t
-                       (print "Total compile time: "))
-    (print (- (clock:clock) start-time) "seconds\n\n")
-    (print-with-colors 'black 'blue #t (print " Types "))
-    (print "\n  " (length *impc:ti:typealias-cache*))
-    (print-with-colors 'cyan 'default #f (print " type aliases\n"))
-    (print "  " (length *impc:ti:generictype-cache*))
-    (print-with-colors 'cyan 'default #f (print " named types\n"))
-    (print "  " (length *impc:ti:namedtype-cache*))
-    (print-with-colors 'cyan 'default #f (print " generic\n"))
-    (print "  " (length *impc:ti:polytype-cache*))
-    (print-with-colors 'cyan 'default #f (print " specializations\n\n"))
-
-    (print-with-colors 'black 'blue #t (print " Closures "))
-    (print "\n  " (length *impc:ti:closure-cache*))
-    (print-with-colors 'cyan 'default #f (print " top-level closures\n"))
-    (print "  " (length *impc:ti:genericfunc-cache*))
-    (print-with-colors 'cyan 'default #f (print " generics\n"))
-    (print "  " (length *impc:ti:polyfunc-cache*))
-    (print-with-colors 'cyan 'default #f (print " specializations\n\n"))))
+    (log-info "Total compile time:" (real->integer (- (clock:clock) start-time)) "seconds")
+    (log-info "type aliases:" (length *impc:ti:typealias-cache*))
+    (log-info "named types:" (length *impc:ti:namedtype-cache*))
+    (log-info "generic types:" (length *impc:ti:generictype-cache*))
+    (log-info "type specialisations:" (length *impc:ti:polytype-cache*))
+    (log-info "top-level closures:" (length *impc:ti:closure-cache*))
+    (log-info "generic functions:" (length *impc:ti:genericfunc-cache*))
+    (log-info "function specialisations:" (length *impc:ti:polyfunc-cache*))))
 
 (define-macro (unix-or-Windows unix-expr win-expr)
   (if (string=? (sys:platform) "Windows")
@@ -3208,10 +3196,10 @@
             (set! *impc:compile:scheme-stubs* #f)
             ;; turn off aot-cache loading
             (set! *impc:compiler:with-cache* #f)
-            (print-with-colors 'cyan 'black #t (print "Started compiling: "))
+            (log-info "Started compiling: ")
             (if asdll? ;; need to preregister init function
-                (impc:ti:register-new-nativefunc 
-                     (string-append file-no-extension "_init") 
+                (impc:ti:register-new-nativefunc
+                     (string-append file-no-extension "_init")
                      (impc:ir:get-type-from-pretty-str "[void]*") "" '()))
             (println)
             (sys:load file-path)
@@ -3220,9 +3208,9 @@
             (define remove-all-static-functions
               (lambda (lst)
                 (filter (lambda (x) (impc:ir:type? (vector-ref (cdr x) 0))) lst)))
-            (define all-closure-setters 
-              (apply string-append 
-                     (map (lambda (x) 
+            (define all-closure-setters
+              (apply string-append
+                     (map (lambda (x)
                             (string-append "call void @" (car x) "_setter();\n"))
                           (reverse (remove-all-static-functions *impc:ti:closure-cache*))))) ;; reverse - make sure we initialize function in correct order!
             (if asdll?
@@ -3231,7 +3219,7 @@
                 all-closure-setters
                 "ret void;
               }"))
-              (llvm:compile-ir 
+              (llvm:compile-ir
                 (string-append "define i32 @main(i32 %args, i8** %argv) {\n"
                 all-closure-setters
                 ;; "call void @test22_adhoc_W2kzMl0_setter();\n"
@@ -3239,22 +3227,18 @@
                 "%res = call i32 @run_adhoc_W2kzMixpMzIsaTgqKl0_native(i32 %args, i8** %argv);
                 ret i32 %res;
               }")))
-            (print-with-colors 'cyan 'black #t (print "Finished compiling: "))
+            (log-info "Finished compiling:" file-path)
             (println file-path)
-            (println)
             ;; turn back on scheme stubs
             (set! *impc:compile:scheme-stubs* #t)
             ;; turn back on cache loading
             (set! *impc:compiler:with-cache* #t)
-            (begin
-              (println)
-              (print-with-colors 'black 'yellow #t (print " JIT-compiling IR "))
-              (print "\n"))
+            (log-info "JIT-compiling IR...")
             (let ((module (impc:compiler:flush-jit-compilation-queue)))
               (if (not module)
                   (impc:compiler:print-compiler-error "Failed compiling LLVM IR"))
                 (impc:aot:compile-exe file-no-extension module libs asdll?))
-            (set! *impc:aot:current-output-port* #f) 
+            (set! *impc:aot:current-output-port* #f)
             ;; (close-port *impc:aot:current-output-port*)
             (quit 0))
           (begin
@@ -3262,7 +3246,7 @@
               (print "\n\ncannot write AOT-compilation file at " aot-compilation-file-path "\n")
               (quit 2)))))))
 
-;; 
+;;
 ;; any 'declare' (external declarations) found in an llvm ll 'lib file'
 ;; must belong to a single DLL specified BEFORE the aot header in main library file
 ;;
@@ -3320,18 +3304,10 @@
                         ;; module name for globals
                         (set! *impc:compiler:global-module-name* libname-no-extension)
                         ;; (impc:aot:insert-header libname-no-extension)
-                        (print-with-colors 'cyan 'black #t (print "Started compiling: "))
-                        (println lib-path)
-                        (println)
+                        (log-info "started compiling" lib-path)
                         (sys:load lib-path)
-                        (println)
-                        (print-with-colors 'cyan 'black #t (print "Finished compiling: "))
-                        (println lib-path)
-                        (println)
-                        (begin
-                          (println)
-                          (print-with-colors 'black 'yellow #t (print " JIT-compiling IR "))
-                          (print "\n"))
+                        (log-info "finished compiling" lib-path)
+                        (log-info "JIT-compiling IR...")
                         (sys:dump-string-to-file ll-path *impc:compiler:queued-llvm-ir-string*)
                         ;; this won't be straight forward without linking in all relevant ll files :(
                         ;; (sys:command (string-append llas-path " " ll-path " -o " bc-path))
@@ -3426,7 +3402,7 @@
   (lambda (lib-path . dll)
     (if (and (not (null? dll)) (car dll))
         (impc:aot:compile-xtm-dll lib-path)
-        (impc:aot:compile-xtm-ll lib-path))))    
+        (impc:aot:compile-xtm-ll lib-path))))
 
 (define icr:new-zone
   (lambda args
@@ -3439,7 +3415,7 @@
     (if (equal? *impc:zone* zone)
         (set! *impc:zone* (sys:default-mzone)))
     (if (equal? zone (sys:default-mzone))
-        (print-notification "You are not allowed to destroy the default zone")
+        (log-info "You are not allowed to destroy the default zone")
         (sys:destrop-mzone zone))))
 
 (define icr:set-zone
@@ -3759,7 +3735,7 @@
 (define impc:ti:cond
   (lambda (ast)
     (if (null? ast) '()
-	      (list 'if (caar ast)
+        (list 'if (caar ast)
               (if (null? (cdar ast))
                   '()
                   (apply list 'begin (cdar ast)))
@@ -4808,7 +4784,7 @@ Continue executing `body' forms until `test-expression' returns #f"
                            #f
                            (if (equal? x y)
                                #f
-                               (begin                             
+                               (begin
                                  (set! mem (cons x mem))
                                  y))))
                      newl1
@@ -4817,7 +4793,7 @@ Continue executing `body' forms until `test-expression' returns #f"
            (chk1 (if (> (length typevars) (length ret))
                      (begin (set! typevars (cl:remove-duplicates typevars))
                             #f)
-                     #t))                            
+                     #t))
            (errchk (if (<> (length ret) (length typevars))
                        (begin (impc:compiler:print-compiler-error "Type Vars and Ret should be same length in Minimize Finalize X"
                                                                   (list ret typevars))
@@ -4830,7 +4806,7 @@ Continue executing `body' forms until `test-expression' returns #f"
       (if (null? result)
           result
           (map (lambda (x) (impc:ir:pretty-print-type x)) result)))))
-    
+
 
 (define impc:ti:minimize-gen-type-x
   (lambda (l1 newl1 l2 newl2)
@@ -5446,11 +5422,11 @@ Continue executing `body' forms until `test-expression' returns #f"
                vars)))
 
     ;; (if (not (cl:find-if list? types))
-    ;; 	  (begin (set! types (cl:remove-duplicates types)) ;; first normalize and check for duplicates
-    ;; 		 (if (= (length types) 1)
-    ;; 		     (car types) ;; if only 1 element in list return as atom
-    ;; 		     (impc:ti:complex-unify types types vars)))
-    ;; 	  (impc:ti:complex-unify sym types vars))))
+    ;;    (begin (set! types (cl:remove-duplicates types)) ;; first normalize and check for duplicates
+    ;;     (if (= (length types) 1)
+    ;;         (car types) ;; if only 1 element in list return as atom
+    ;;         (impc:ti:complex-unify types types vars)))
+    ;;    (impc:ti:complex-unify sym types vars))))
 
     (let ((result (impc:ti:complex-unify sym types vars)))
       ;; (println 'sym: sym 't: types 'result result 'vars: vars)
@@ -5550,7 +5526,7 @@ Continue executing `body' forms until `test-expression' returns #f"
 ;;     (if (or (null? type)
 ;;             (atom? type)
 ;;             (impc:ir:type? type)) ;; (note to andrew) remove this line for GC crash!
-;; 	type
+;;  type
 ;;         (map (lambda (k)
 ;;                (if (list? k)
 ;;                    (if (= (length k) 1)
@@ -5686,7 +5662,7 @@ Continue executing `body' forms until `test-expression' returns #f"
                               ;(set-cdr! pair (cl:remove-if-not
                               ;                (lambda (x) (impc:ir:type? x))
                               ;                (cl:remove-duplicates
-                              ;                 (append t pair-rest))))))                              
+                              ;                 (append t pair-rest))))))
                               (set-cdr! pair (cl:remove-duplicates (append t pair-rest))))))
                     '())))))))
 
@@ -6379,8 +6355,8 @@ Continue executing `body' forms until `test-expression' returns #f"
                       (if (string-contains? (symbol->string gt) ":")
                           (impc:ti:generic-types-matchup? gt tt vars)
                           #t))
-	     	 (begin ;; (println '----matched-polytype-1: gt '-> tt)
-	     	   (if (symbol? tt)
+         (begin ;; (println '----matched-polytype-1: gt '-> tt)
+           (if (symbol? tt)
                (begin
                  (if (not (assoc-strcmp tt vars))
                      (set! vars (cons (list tt) vars)))
@@ -6390,32 +6366,32 @@ Continue executing `body' forms until `test-expression' returns #f"
                        (impc:ti:update-var gt vars kts (impc:ti:type-unify (cdr (assoc-strcmp tt vars)) vars)))))
                  (impc:ti:update-var gt vars kts (impc:ti:type-unify tt vars)))))
 
-	     (if (atom? tt)
-		 (set! tt (list tt)))
-	     (if (and (list? tt)
-		      (list? (car tt))
-		      (not (atom? gt)))
-		 (set! tt (car tt)))
-	     (if (atom? gt)
-		 (set! gt (list gt)))
-	     ;(println 2 'a: a 'tt: tt 'gt: gt)
-	     ;; if gt and tt still not equal tt maybe a named-type
-	     (if (<> (length gt) (length tt))
+       (if (atom? tt)
+     (set! tt (list tt)))
+       (if (and (list? tt)
+          (list? (car tt))
+          (not (atom? gt)))
+     (set! tt (car tt)))
+       (if (atom? gt)
+     (set! gt (list gt)))
+       ;(println 2 'a: a 'tt: tt 'gt: gt)
+       ;; if gt and tt still not equal tt maybe a named-type
+       (if (<> (length gt) (length tt))
            (if (and
                 (not (null? tt))
                 (string? (car tt)) ;; named type?
                 (not (null? (llvm:get-named-type (car tt))))
-			  (= (length gt) (length (impc:ir:get-type-from-str (llvm:get-named-type (car tt))))))
-		     (set! tt (impc:ir:get-type-from-str (llvm:get-named-type (car tt))))
-		     (set! subcheck #f)))
-		     ;;(print-error 'Compiler 'Error: 'type 'mismatch 'in 'generics gt '- tt)))
+        (= (length gt) (length (impc:ir:get-type-from-str (llvm:get-named-type (car tt))))))
+         (set! tt (impc:ir:get-type-from-str (llvm:get-named-type (car tt))))
+         (set! subcheck #f)))
+         ;;(log-error 'Compiler 'Error: 'type 'mismatch 'in 'generics gt '- tt)))
 
-	     ;; GCHANGE
-	     ;; we might be able to update-vars based by matching our request 'gt vs our result 'tt
-	     (if subcheck
-		 (for-each
-		  (lambda (aa bb)
-		    ;; (println 'matched-polytype-2: aa '-> bb)
+       ;; GCHANGE
+       ;; we might be able to update-vars based by matching our request 'gt vs our result 'tt
+       (if subcheck
+     (for-each
+      (lambda (aa bb)
+        ;; (println 'matched-polytype-2: aa '-> bb)
                     ;; (println 'vars: vars)
                     (if (and (atom? aa)
                              (symbol? aa)
@@ -6479,7 +6455,7 @@ Continue executing `body' forms until `test-expression' returns #f"
 (define impc:ti:reverse-set-bangs-from-reified
   (lambda (poly reified gnum vars)
     ;; (println 'reverse-bangs: poly 'gnum: gnum)
-    ;; (println 'vars vars)    
+    ;; (println 'vars vars)
     ;; (println 'reified: reified)
     ;; (println 'pretty: (impc:ir:pretty-print-type reified))
     ;; (println 'okpretty)
@@ -6660,7 +6636,7 @@ Continue executing `body' forms until `test-expression' returns #f"
                 #f)
               (begin ;; (println 'hit-recursion-limit)
                 ;; (println 'vars vars)
-                (print-error 'Compiler 'Error: 'hit 'generics 'recursion 'limit 'request req?)
+                (log-error 'Compiler 'Error: 'hit 'generics 'recursion 'limit 'request req?)
                 #f)))
       ;; (if (not (equal? gpoly-type (car grtype)))
       ;;     (begin (println 'RET: gpoly-type '-> grtype)
@@ -6719,12 +6695,12 @@ Continue executing `body' forms until `test-expression' returns #f"
                                                        (if (string? (impc:ir:get-type-from-pretty-str (cdr x)))
                                                            (string-append "\""
                                                                           (impc:ir:get-type-from-pretty-str (cdr x))
-                                                                          "\"")                       
+                                                                          "\"")
                                                            (sexpr->string (impc:ir:get-type-from-pretty-str (cdr x))))))
                       (set! newtype (regex:replace-all newtype (car x) (cdr x)))))
                 pairs)
       ;; (if (not (null? pairs)) (println 'newt: newtype (impc:ir:type? newtype)))
-      ;; (println 'variable-sub-out (string->sexpr newtype))  
+      ;; (println 'variable-sub-out (string->sexpr newtype))
       (string->sexpr newtype))))
 
 (define impc:ti:get-type-for-gpoly
@@ -6757,16 +6733,16 @@ Continue executing `body' forms until `test-expression' returns #f"
                  (equal? (car request?) *impc:ir:notype*)))
         (set! request? #f))
      ;; flatten request
-    (if (and request? 
+    (if (and request?
              (list? request?)
              ;; (not (impc:ir:complex-type? request?))
              (not (impc:ir:type? request?)) ;
              (impc:ir:type? (car request?)))
-        (set! request? (car request?)))    
+        (set! request? (car request?)))
     (if (not (impc:ir:type? request?))
         (set! request? #f))
-    ;; 
-    ;; (println 'generics-check (car ast) 'request: request?)    
+    ;;
+    ;; (println 'generics-check (car ast) 'request: request?)
     ;; only check if not already fully formed!
     (cond ((assoc-strcmp (car ast) kts)
            ;; (println 'leave-early1: ast ': (assoc-strcmp (car ast) kts))
@@ -6849,7 +6825,7 @@ Continue executing `body' forms until `test-expression' returns #f"
              ;; so ... at this point we check and inject missing
              ;; generic bang types into vars
              ;;
-             ;; this for things like Point:<!ga_130,!ga_130> 
+             ;; this for things like Point:<!ga_130,!ga_130>
              (for-each (lambda (a)
                          ;; (println 'a a)
                          (if (regex:match? a "^([a-zA-Z]|!)")
@@ -6877,8 +6853,8 @@ Continue executing `body' forms until `test-expression' returns #f"
                                      vs)))
                        (impc:ir:get-pretty-closure-arg-strings
                         (cadr (regex:type-split (symbol->string (cadr gpoly-code)) ":"))))
-             ;;;;;;;;;;;;;;;;             
-             
+             ;;;;;;;;;;;;;;;;
+
 
              (if (<> (length (cdr gpoly-type))
                      (length ast))
@@ -7037,9 +7013,9 @@ Continue executing `body' forms until `test-expression' returns #f"
 
                        ;; (println 'pre ast 'grtype grtype 'gftype gftype 'constraint constraint)
                        (if (null? grtype) (set! grtype gftype))
-                       
+
                        ;; apply any type constraints check!
-                       (if (and (not (null? grtype)) 
+                       (if (and (not (null? grtype))
                                 constraint)
                            (let* ((lgrtype (if (= (length grtype) (+ 2 arity)) ;; in case grtype is a list of multiple closure options rather than 1 specific closure type
                                                grtype
@@ -7078,8 +7054,8 @@ Continue executing `body' forms until `test-expression' returns #f"
                                                      (if (impc:ir:type? grtype)
                                                          (impc:ir:pretty-print-type grtype)
                                                          "<uknown>")))))))
-                                 
-                       ;; (println 'post ast 'constraint 'grtype grtype 'gftype gftype)                           
+
+                       ;; (println 'post ast 'constraint 'grtype grtype 'gftype gftype)
                        ;; if grtype is VALID
                        ;; and if the return type of gftype is a symbol
                        ;; THEN update the return type of gftype (symbol)
@@ -7717,7 +7693,7 @@ Continue executing `body' forms until `test-expression' returns #f"
     ;; (println 'vars: vars '(cadr ast) (cadr ast))
     ;; for the symbols we want to set each return type
     (let ((internalreq? (cond ((equal? `(begin ,(caar (cadr ast)))
-                                       (caddr ast))                               
+                                       (caddr ast))
                                request?)
                               (else #f))))
       (for-each (lambda (e)
@@ -7911,7 +7887,7 @@ xtlang's `let' syntax is the same as Scheme"
           (set! t b))
       ;; return intersection of b and c
       (if (null? t)
-          t ;;(print-error 'Compiler 'Error: 'cannot 'unify 'then b 'and 'else c 'in ast) ;(map (lambda (v) (impc:ir:get-type-str v)) b) 'and 'else (map (lambda (v) (impc:ir:get-type-str v)) c) 'clauses 'in ast)
+          t ;;(log-error 'Compiler 'Error: 'cannot 'unify 'then b 'and 'else c 'in ast) ;(map (lambda (v) (impc:ir:get-type-str v)) b) 'and 'else (map (lambda (v) (impc:ir:get-type-str v)) c) 'clauses 'in ast)
           t))))
 
 
@@ -7930,7 +7906,7 @@ xtlang's `let' syntax is the same as Scheme"
            (b (map (lambda (x) (set! a (impc:ti:type-check x vars kts a))) (cddr ast))))
       (list *impc:ir:array* (length (cdr ast)) a))))
 
-(define impc:ti:array-set-check  
+(define impc:ti:array-set-check
   (lambda (ast vars kts request?)
     (if (<> (length ast) 4)
         (impc:compiler:print-bad-arity-error (car ast)))
@@ -8835,7 +8811,7 @@ xtlang's `let' syntax is the same as Scheme"
                                                                  ((eq? (car ast) '/) "xtm_division##")
                                                                  ((eq? (car ast) '-) "xtm_subtraction##")
                                                                  ((eq? (car ast) '%) "xtm_modulo##")
-                                                                 (else (print-error "Error in math overloading")))
+                                                                 (else (log-error "Error in math overloading")))
                                                            (number->string *unique-polynum*)))))
                      (insert-at-index 1 vars (list m))
                      (set-car! ast m)
@@ -8850,7 +8826,7 @@ xtlang's `let' syntax is the same as Scheme"
                                                                  ((eq? (car ast) '>) "xtm_greaterthan##")
                                                                  ((eq? (car ast) '=) "xtm_equal##")
                                                                  ((eq? (car ast) '<>) "xtm_notequal##")
-                                                                 (else (print-error "Error in math overloading")))
+                                                                 (else (log-error "Error in math overloading")))
                                                            (number->string *unique-polynum*)))))
                      (insert-at-index 1 vars (list m))
                      (set-car! ast m)
@@ -8887,7 +8863,7 @@ xtlang's `let' syntax is the same as Scheme"
           ((and (list? ast) (member (car ast) '(make-tuple))) (impc:ti:make-tuple-check ast vars kts request?))
           ((and (list? ast) (member (car ast) '(num-of-elts))) (impc:ti:num-of-elts-check ast vars kts request?))
           ((and (list? ast) (member (car ast) '(obj-size))) (impc:ti:obj-size-check ast vars kts request?))
-          ((and (list? ast) (member (car ast) '(ref))) (impc:ti:ref-check ast vars kts request?))                    
+          ((and (list? ast) (member (car ast) '(ref))) (impc:ti:ref-check ast vars kts request?))
           ((and (list? ast) (member (car ast) '(tuple-set!))) (impc:ti:tuple-set-check ast vars kts request?))
           ((and (list? ast) (member (car ast) '(tuple-ref))) (impc:ti:tuple-ref-check ast vars kts request?))
           ((and (list? ast) (member (car ast) '(tuple-ref-ptr))) (impc:ti:tuple-ref-ptr-check ast vars kts request?))
@@ -8993,7 +8969,7 @@ xtlang's `let' syntax is the same as Scheme"
 (define impc:ti:run-type-check
   (lambda (vars forced-types ast)
     ;; (println '====================================)
-    ;; (println 'run-type-check 'ast: ast)    
+    ;; (println 'run-type-check 'ast: ast)
     ;; (println 'forced-types forced-types)
     ;; (println 'vars: vars)
     (let ((typelist (call/cc (lambda (k) (set! *type-check-continuation* k) '()))))
@@ -9017,7 +8993,7 @@ xtlang's `let' syntax is the same as Scheme"
     ;; (println 'forced-types* forced-types)
     ;; (println 'ast: ast)
     ;; (println 'vars*: vars)
-    (define *impc:ti:nativef-generics-recurse-test* 0)    
+    (define *impc:ti:nativef-generics-recurse-test* 0)
     (set! *impc:ti:type-check-function-symbol* (caaadr ast))
     (set! *impc:ti:type-check-function-symbol-short*
           (string->symbol
@@ -9918,7 +9894,7 @@ xtlang's `let' syntax is the same as Scheme"
                       (make-list-with-proc (length (cdr stub-type))
                                             (lambda (i) (string-append "%arg_" (atom->string i))))) ", ")
           ")\n"
-          
+
           (let* ((t (car stub-type)))
             (cond ((and (not (number? t))
                         (not (impc:ir:pointer? t)))
@@ -10057,7 +10033,7 @@ xtlang's `let' syntax is the same as Scheme"
                           (f (car lst))
                           (f (cdr lst)))))))
         (f t5))
-      
+
       (if (and poly ;;*impc:ti:implicit-adhoc-compiles*
                (not (regex:match? adhoc-poly-name-string "(_poly_|_adhoc_)")))
           (let* ((p (assoc-strcmp symname types))
@@ -10073,18 +10049,18 @@ xtlang's `let' syntax is the same as Scheme"
             (set! symname-string new)
             (set! newast (impc:ti:add-types-to-source symname t6 (cl:tree-copy types) (list))))
           (set! newast (impc:ti:add-types-to-source symname t5 (cl:tree-copy types) (list))))
-          
-      ;; 
+
+      ;;
       ;; modify code for static functions
-      ;; 
-      (if static 
+      ;;
+      (if static
           (let* ((code (cdr (cadar (caddr newast))))
                  (env (caar (caddr newast)))
                  (num (car code))
                  (name (cadr code))
                  (n2 (regex:split name "__"))
                  (body (cddr code)))
-            ;; first strip the environment! (i.e. static not closure!) 
+            ;; first strip the environment! (i.e. static not closure!)
             (set! body (remove-all '_x_x_ (replace-all body `((,env . _x_x_)))))
             ;; then replace make-closure with make-static (at the top level)
             (set! newast (apply list '__make-static num (car n2) body))))
@@ -10112,7 +10088,7 @@ xtlang's `let' syntax is the same as Scheme"
                                  (map (lambda (x) (impc:ir:get-type-from-str x))
                                       (impc:ti:get-closure-arg-types symname-string))))
            (impc:ir:pptype (cdr (assoc-strcmp symname types)))))
-                                        ;(print-error "stop")
+                                        ;(log-error "stop")
       (if *impc:compiler:print-ast* (println '---------------------------------))
       (if *impc:compiler:print-ast* (println 'types: types))
                                         ;(println 'ctypes: converted-types)
@@ -10141,13 +10117,13 @@ xtlang's `let' syntax is the same as Scheme"
                            (begin
                              (impc:aot:insert-static-binding-details (string->symbol (string-append (symbol->string symname) "_scheme")) (string->symbol "[i8*,i8*,i8*]*"))
                               ;; (newline *impc:aot:current-output-port*)
-                              ;  (impc:compiler:print-lib-binding-details-to-log (string->symbol *impc:aot:current-lib-name*) 
-                              ;                                                   (string->symbol (string-append (symbol->string symname) "_scheme")) 
+                              ;  (impc:compiler:print-lib-binding-details-to-log (string->symbol *impc:aot:current-lib-name*)
+                              ;                                                   (string->symbol (string-append (symbol->string symname) "_scheme"))
                               ;                                                   (string->symbol "[i8*,i8*,i8*]*"))
                               (write `(mk-ff ,(symbol->string symname) (llvm:get-function-pointer ,(string-append (symbol->string symname) "_scheme"))) *impc:aot:current-output-port*)
                               (newline *impc:aot:current-output-port*))))
                 (begin
-                  (if (and (string? scheme_ir) 
+                  (if (and (string? scheme_ir)
                            (llvm:get-function-pointer (string-append (symbol->string symname) "_scheme")))
                       (mk-ff (symbol->string symname) (llvm:get-function-pointer (string-append (symbol->string symname) "_scheme"))))))
             ;; (impc:aot:insert-nativefunc-binding-details library symname type docstring)))
@@ -10474,7 +10450,7 @@ xtlang's `let' syntax is the same as Scheme"
         (if (and *impc:compile* compile-stub?)
             (begin (impc:compiler:queue-ir-for-compilation stub-ir)
                    (impc:compiler:queue-ir-for-compilation native-ir)
-                   (if (and scheme-stub-valid? *impc:compile:scheme-stubs*) 
+                   (if (and scheme-stub-valid? *impc:compile:scheme-stubs*)
                        (impc:compiler:queue-ir-for-compilation scheme-stub-ir) #t)))
         (if *impc:compiler:print*
             (println '----------------------------compiling 'callback----------------------------------->))
@@ -10668,7 +10644,7 @@ xtlang's `let' syntax is the same as Scheme"
          ;; (impc:ti:create-scheme-wrapper (symbol->string ',symname)))))))
          (impc:ti:initialize-closure-with-new-zone newname *impc:default-zone-size*)
          (impc:ti:create-scheme-wrapper newname)))))
-      
+
 (define-macro (bind-closure . args)
   ;; if aot and func already exists then bomb out
   (if (and (output-port? *impc:aot:current-output-port*)
@@ -10749,10 +10725,10 @@ xtlang's `let' syntax is the same as Scheme"
       (impc:compiler:print-compiler-error "Poorly formed bind-func expression"))
   (if (and (= (length args) 2) (not (symbol? (car args))) (not (or (string? (cadr args)) (list? (cadr args)))))
       (impc:compiler:print-compiler-error "Poorly formed bind-func expression"))
-  (if (and (= (length args) 3) 
-           (not (symbol? (car args))) 
-           (not (symbol? (cadr args))) 
-           (not (or (string? (caddr args)) 
+  (if (and (= (length args) 3)
+           (not (symbol? (car args)))
+           (not (symbol? (cadr args)))
+           (not (or (string? (caddr args))
                     (list (caddr args)))))
       (impc:compiler:print-compiler-error "Poorly formed bind-func expression"))
   (if (equal? (car args) 'static)
@@ -10787,7 +10763,7 @@ xtlang's `let' syntax is the same as Scheme"
               (begin (ipc:call procname 'bind-func-ipc
                                (string->symbol (vector-ref (car polytypes) 0)))
                      (ipc:define procname symname (eval symname)))
-              (print-error "Not a monomorphic xtlang function:" symname))))))
+              (log-error "Not a monomorphic xtlang function:" symname))))))
 
 (define ipc:load
   (lambda (process-name file)
@@ -10955,7 +10931,7 @@ xtlang's `let' syntax is the same as Scheme"
                           obj)))
                    (interaction-environment))))
        ;; (eval `(bind-func ,(string->symbol (string-append namestr (if generic ":" "_z:") ctype)) #t
-       (eval `(bind-func ,(string->symbol (string-append namestr "_z:" ctype)) #t                
+       (eval `(bind-func ,(string->symbol (string-append namestr "_z:" ctype)) #t
                 (lambda ,argslist
                   (let ((obj (zalloc)))
                     ,@body
@@ -11299,7 +11275,7 @@ xtlang's `let' syntax is the same as Scheme"
       (impc:ti:register-new-globalvar ,(symbol->string symname) type-list ds)
       (impc:aot:insert-ext-globalvar-binding-details ,(symbol->string symname) ,(symbol->string type) ds)
       (impc:compiler:print-binding-details-to-log "bind-ext-val:" ,(symbol->string symname) ,(symbol->string type))))
-  
+
 (impc:ti:register-new-builtin
  "bind-ext-val"
  ""
@@ -11329,9 +11305,9 @@ xtlang's `let' syntax is the same as Scheme"
            (impc:ti:register-new-polyfunc ,(symbol->string poly_sym) ,(symbol->string implementation_sym) ',type ,(if (null? docstring) "" (car docstring)))
            (impc:ti:create-scheme-wrapper (symbol->string ',implementation_sym))
            (if (not (regex:match? ,(symbol->string implementation_sym) "(_adhoc_|_poly_)"))
-               (impc:compiler:print-polying-details-to-log "PolyFunc:" 
-                                                           ,(symbol->string poly_sym) 
-                                                           ,(symbol->string implementation_sym) 
+               (impc:compiler:print-polying-details-to-log "PolyFunc:"
+                                                           ,(symbol->string poly_sym)
+                                                           ,(symbol->string implementation_sym)
                                                            ,(impc:ir:pretty-print-type type))))
         `(impc:compiler:print-missing-identifier-error ',implementation_sym 'closure))))
 
@@ -11499,7 +11475,7 @@ e.g.
                                            ',(impc:ir:get-type-from-pretty-str typestr namestr)
                                            ,docstring)
            (impc:compiler:print-compiler-error "bind-lib-type failed" ,name)))))
-  
+
 (define-macro (register-lib-type library name type docstring)
   (let* ((a (impc:ir:get-pretty-tuple-arg-strings (symbol->string type)))
          (namestr (symbol->string name))
@@ -11545,7 +11521,7 @@ e.g.
                                                  ,(symbol->string type))
      (impc:ti:initialize-closure-with-new-zone ,(symbol->string symname)
                                                ,zone-size)))
-  
+
 (define-macro (register-lib-func library symname type zone-size docstring body)
   `(begin
      ;; bind scheme function
@@ -12407,7 +12383,7 @@ e.g.
 ;; helper functions for constraint checking
 ;;
 ;; note that these need to take *impc:ir:notype* into acct
-;; 
+;;
 ;; in other words they should only fail for actual types
 ;; they should succeed against *impc:ir:notype*
 ;;
@@ -12439,7 +12415,7 @@ e.g.
 (define t:notype? (lambda (x) (if (string? x) (set! x (impc:ir:get-type-from-pretty-str x))) (equal? x *impc:ir:notype*)))
 
 ;; how many elements (or args for closure) does type have
-;; 
+;;
 (define t:elts? (lambda (x num)
                   (if (string? x) (set! x (impc:ir:get-type-from-pretty-str x)))
                   (cond ((string? x) (= num -1))
@@ -12452,7 +12428,7 @@ e.g.
                         (else (= num 1)))))
 
 ;; closure with number of args
-(define t:closure-size? (lambda (f num)                                 
+(define t:closure-size? (lambda (f num)
                           (if (string? f) (set! f (impc:ir:get-type-from-pretty-str f)))
                           (and (impc:ir:closure? f)
                                (t:elts? f num))))
@@ -12508,8 +12484,8 @@ e.g.
 ;;                              (impc:compiler:print-compiler-error "poorly formed t:named? constraint args" (list x y)))
 ;;                          (if (string=? (t:cleanup-string-type-b x) (t:cleanup-string-type-b y))
 ;;                                  #t
-;;                                  #f)))))                  
-                   
+;;                                  #f)))))
+
 
 (define t:poly-exists?
   (lambda (name type)
